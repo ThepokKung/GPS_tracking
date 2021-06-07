@@ -10,29 +10,35 @@
 static const uint32_t GPSBaud = 9600;
 
 ////////////////////////////////////////////////////////////////////////////////////
-char* ssid = "ThepokKung_reset"; //Wifi Name
-char* password = "thepokkung"; //Wifi Password
+char* ssid = "Violet Evergarden"; //Wifi Name
+char* password = "25022021"; //Wifi Password
 ////////////////////////////////////////////////////////////////////////////////////
-//MQTT connected
-//Test server
-const char* mqttServer = "broker.mqttdashboard.com";
-const int mqttPort = 1883;
-const char* mqttUser = "";
-const char* mqttPassword = "";
-char mqtt_name_id[] = "";
+////////////////////////////////////////////////////////////////////////////////////
+/*
+  char* ssid = "RSRC2"; //Wifi Name
+  char* password = "043234794";
+*/
+////////////////////////////////////////////////////////////////////////////////////
+  //MQTT connected
+  //Test server
+  const char* mqttServer = "broker.mqttdashboard.com";
+  const int mqttPort = 1883;
+  const char* mqttUser = "";
+  const char* mqttPassword = "";
+  char mqtt_name_id[] = "";
+  ////////////////////////////////////////////////////////////////////////////////////
+  WiFiClient client;
+  PubSubClient mqtt(client);
+  TinyGPSPlus gps;
+  HardwareSerial ss(2);
+  ////////////////////////////////////////////////////////////////////////////////////
+  //Json
+  ////////////////////////////////////////////////////
+  StaticJsonDocument<256> doc;
+  char buffer[256];
+  ////////////////////////////////////////////////////
 
-WiFiClient client;
-PubSubClient mqtt(client);
-TinyGPSPlus gps;
-HardwareSerial ss(2);
-
-//Json
-////////////////////////////////////////////////////
-StaticJsonDocument<256> doc;
-char buffer[256];
-////////////////////////////////////////////////////
-
-void setupwifi() {
+  void setupwifi() {
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -50,25 +56,24 @@ void setupwifi() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());;
-}
+  }
 
-void callback (char* topic, byte* payload, unsigned int length) {
+  void callback (char* topic, byte* payload, unsigned int length) {
   deserializeJson(doc, payload, length);
   size_t n = serializeJson(doc, buffer);
   ///////////////////////////////////////////////////////////////////////////////////////////////
-  if (mqtt.connect("ntnode/sensors/", mqttUser, mqttPassword)) {
+  if (mqtt.connect("ntnode/sensors2/", mqttUser, mqttPassword)) {
     if (mqtt.publish("ntnode/sensors/", buffer, n) == true) {
       Serial.println("publish Valve status success");
-
     } else {
       Serial.println("publish Fail");
     }
   } else {
     Serial.println("Connect Fail MQTT");
   }
-}
+  }
 
-void reconnect_mqtt() {
+  void reconnect_mqtt() {
   while (!mqtt.connected()) {
     unsigned long currentMillis = millis();
     unsigned long previousMillis = 0;
@@ -95,9 +100,9 @@ void reconnect_mqtt() {
       delay(5000);
     }
   }
-}
+  }
 
-void setup() {
+  void setup() {
   Serial.begin(115200);
   ss.begin(GPSBaud, SERIAL_8N1, RXPin, TXPin, false);
   Serial.println(TinyGPSPlus::libraryVersion());
@@ -105,59 +110,9 @@ void setup() {
   mqtt.setServer(mqttServer, mqttPort); //Login MQTT
   mqtt.setCallback(callback);
 
-}
+  }
 
-void loop() {
-  /*
-    if (!mqtt.connected()) {
-    Serial.println("---Reconnect MQTT ---");
-    reconnect_mqtt();
-    }
-    mqtt.loop();
-
-    if (ss.available() > 0) {
-    if (gps.encode(ss.read())) {
-      Serial.print(F("Location: "));
-      if (gps.location.isValid())
-      {
-        Serial.print(gps.location.lat(), 6);
-        Serial.print(F(","));
-        Serial.print(gps.location.lng(), 6);
-      }
-      else
-      {
-        Serial.print(F("INVALID"));
-      }
-      Serial.println();
-    }
-    }
-    if (millis() > 5000 && gps.charsProcessed() < 10)
-    {
-    Serial.println(F("No GPS detected: check wiring."));
-    while (true);
-    }
-
-    doc["deviceid"] = "gps tracking";
-    doc["latitude"] = (gps.location.lat(), 6);
-    doc["longitude"] = (gps.location.lng(), 6);
-
-    size_t n = serializeJson(doc, buffer);
-
-    if (mqtt.connect(mqtt_name_id, mqttUser, mqttPassword)) {
-    Serial.println("\nConnected MQTT: ");
-    if (mqtt.publish("ntnode/sensors/", buffer , n) == true) {
-      Serial.println("publish success");
-    } else {
-      Serial.println("publish Fail");
-    }
-    } else {
-    Serial.println("Connect Fail MQTT");
-    }
-    Serial.println("=============");
-
-    delay(1000);
-  */
-
+  void loop() {
   if (!mqtt.connected()) {
     Serial.println("---Reconnect MQTT ---");
     reconnect_mqtt();
@@ -167,6 +122,7 @@ void loop() {
   while (ss.available() > 0)
     if (gps.encode(ss.read()))
       displayInfo();
+      delay(1000);
 
   if (millis() > 5000 && gps.charsProcessed() < 10)
   {
@@ -174,30 +130,33 @@ void loop() {
     while (true);
   }
   delay(1000);
-}
+  }
 
-void displayInfo()
-{
+  void displayInfo()
+  {
   Serial.print(F("Location: "));
   if (gps.location.isValid())
   {
     Serial.print(gps.location.lat(), 6);
     Serial.print(F(","));
     Serial.print(gps.location.lng(), 6);
+    doc["deviceid"] = "gps tracking";
+    doc["latitude"] = gps.location.lat();
+    doc["longitude"] = gps.location.lng();
   }
   else
   {
     Serial.print(F("INVALID"));
+    doc["deviceid"] = "gps tracking";
+    doc["latitude"] = "NULL";
+    doc["longitude"] = "NULL";
   }
-  doc["deviceid"] = "gps tracking";
-  doc["latitude"] = gps.location.lat();
-  doc["longitude"] = gps.location.lng();
 
   size_t n = serializeJson(doc, buffer);
 
   if (mqtt.connect(mqtt_name_id, mqttUser, mqttPassword)) {
     Serial.println("\nConnected MQTT: ");
-    if (mqtt.publish("ntnode/sensors/", buffer , n) == true) {
+    if (mqtt.publish("ntnode/sensors2/", buffer , n) == true) {
       Serial.println("publish success");
     } else {
       Serial.println("publish Fail");
@@ -206,6 +165,5 @@ void displayInfo()
     Serial.println("Connect Fail MQTT");
   }
   Serial.println("=============");
-
-  Serial.println();
-}
+  delay(10000);
+  }
