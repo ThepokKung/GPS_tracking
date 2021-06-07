@@ -19,26 +19,27 @@ char* password = "25022021"; //Wifi Password
   char* password = "043234794";
 */
 ////////////////////////////////////////////////////////////////////////////////////
-  //MQTT connected
-  //Test server
-  const char* mqttServer = "broker.mqttdashboard.com";
-  const int mqttPort = 1883;
-  const char* mqttUser = "";
-  const char* mqttPassword = "";
-  char mqtt_name_id[] = "";
-  ////////////////////////////////////////////////////////////////////////////////////
-  WiFiClient client;
-  PubSubClient mqtt(client);
-  TinyGPSPlus gps;
-  HardwareSerial ss(2);
-  ////////////////////////////////////////////////////////////////////////////////////
-  //Json
-  ////////////////////////////////////////////////////
-  StaticJsonDocument<256> doc;
-  char buffer[256];
-  ////////////////////////////////////////////////////
+//MQTT connected
+//Test server
+const char* mqttServer = "180.180.216.61";
+const int mqttPort = 1883;
+const char* mqttUser = "juub";
+const char* mqttPassword = "t0t12345";
+char mqtt_name_id[] = "";
+const char* mqtt_topic = "ntnode/gps/";
+////////////////////////////////////////////////////////////////////////////////////
+WiFiClient client;
+PubSubClient mqtt(client);
+TinyGPSPlus gps;
+HardwareSerial ss(2);
+////////////////////////////////////////////////////////////////////////////////////
+//Json
+////////////////////////////////////////////////////
+StaticJsonDocument<256> doc;
+char buffer[256];
+////////////////////////////////////////////////////
 
-  void setupwifi() {
+void setupwifi() {
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -56,14 +57,14 @@ char* password = "25022021"; //Wifi Password
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());;
-  }
+}
 
-  void callback (char* topic, byte* payload, unsigned int length) {
+void callback (char* topic, byte* payload, unsigned int length) {
   deserializeJson(doc, payload, length);
   size_t n = serializeJson(doc, buffer);
   ///////////////////////////////////////////////////////////////////////////////////////////////
   if (mqtt.connect("ntnode/sensors2/", mqttUser, mqttPassword)) {
-    if (mqtt.publish("ntnode/sensors/", buffer, n) == true) {
+    if (mqtt.publish(mqtt_topic, buffer, n) == true) {
       Serial.println("publish Valve status success");
     } else {
       Serial.println("publish Fail");
@@ -71,9 +72,9 @@ char* password = "25022021"; //Wifi Password
   } else {
     Serial.println("Connect Fail MQTT");
   }
-  }
+}
 
-  void reconnect_mqtt() {
+void reconnect_mqtt() {
   while (!mqtt.connected()) {
     unsigned long currentMillis = millis();
     unsigned long previousMillis = 0;
@@ -100,9 +101,9 @@ char* password = "25022021"; //Wifi Password
       delay(5000);
     }
   }
-  }
+}
 
-  void setup() {
+void setup() {
   Serial.begin(115200);
   ss.begin(GPSBaud, SERIAL_8N1, RXPin, TXPin, false);
   Serial.println(TinyGPSPlus::libraryVersion());
@@ -110,19 +111,13 @@ char* password = "25022021"; //Wifi Password
   mqtt.setServer(mqttServer, mqttPort); //Login MQTT
   mqtt.setCallback(callback);
 
-  }
+}
 
-  void loop() {
-  if (!mqtt.connected()) {
-    Serial.println("---Reconnect MQTT ---");
-    reconnect_mqtt();
-  }
-  mqtt.loop();
-
+void loop() {
   while (ss.available() > 0)
     if (gps.encode(ss.read()))
       displayInfo();
-      delay(1000);
+  delay(1000);
 
   if (millis() > 5000 && gps.charsProcessed() < 10)
   {
@@ -130,24 +125,29 @@ char* password = "25022021"; //Wifi Password
     while (true);
   }
   delay(1000);
-  }
+}
 
-  void displayInfo()
-  {
+void displayInfo()
+{
+  if (!mqtt.connected()) {
+    Serial.println("---Reconnect MQTT ---");
+    reconnect_mqtt();
+  }
+  mqtt.loop();
   Serial.print(F("Location: "));
   if (gps.location.isValid())
   {
     Serial.print(gps.location.lat(), 6);
     Serial.print(F(","));
     Serial.print(gps.location.lng(), 6);
-    doc["deviceid"] = "gps tracking";
+    doc["deviceid"] = "gps tracking 2";
     doc["latitude"] = gps.location.lat();
     doc["longitude"] = gps.location.lng();
   }
   else
   {
     Serial.print(F("INVALID"));
-    doc["deviceid"] = "gps tracking";
+    doc["deviceid"] = "gps tracking 2";
     doc["latitude"] = "NULL";
     doc["longitude"] = "NULL";
   }
@@ -156,7 +156,7 @@ char* password = "25022021"; //Wifi Password
 
   if (mqtt.connect(mqtt_name_id, mqttUser, mqttPassword)) {
     Serial.println("\nConnected MQTT: ");
-    if (mqtt.publish("ntnode/sensors2/", buffer , n) == true) {
+    if (mqtt.publish(mqtt_topic, buffer , n) == true) {
       Serial.println("publish success");
     } else {
       Serial.println("publish Fail");
@@ -166,4 +166,4 @@ char* password = "25022021"; //Wifi Password
   }
   Serial.println("=============");
   delay(10000);
-  }
+}
