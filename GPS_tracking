@@ -63,7 +63,7 @@ void callback (char* topic, byte* payload, unsigned int length) {
   deserializeJson(doc, payload, length);
   size_t n = serializeJson(doc, buffer);
   ///////////////////////////////////////////////////////////////////////////////////////////////
-  if (mqtt.connect("ntnode/sensors2/", mqttUser, mqttPassword)) {
+  if (mqtt.connect(mqtt_topic, mqttUser, mqttPassword)) {
     if (mqtt.publish(mqtt_topic, buffer, n) == true) {
       Serial.println("publish Valve status success");
     } else {
@@ -168,5 +168,5 @@ void displayInfo()
   }
   serializeJsonPretty(doc, Serial);
   Serial.println("=============");
-  delay(10000);
+  delay(5000);
 }
