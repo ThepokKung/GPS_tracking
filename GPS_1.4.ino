@@ -259,7 +259,7 @@ void displayInfo()
     }
   }
   */
-  if (Parking_point == 10){
+  if (Parking_point == 60){
     digitalWrite(Buzzer,HIGH);
     Parking_point = 0;
   }
